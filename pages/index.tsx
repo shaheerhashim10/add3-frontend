@@ -56,6 +56,7 @@ export default function Home() {
         if (accounts.length > 0) {
           setWalletAddress(accounts[0]);
           setMintAddress("");
+          setStatus("");
           if (signer && accounts[0])
             fetchBalanceFromBlockchain(signer, accounts[0]);
           // setStatus("Write a message in the text-field above.");
@@ -83,7 +84,6 @@ export default function Home() {
     signer: ethers.providers.JsonRpcSigner,
     walletAddress: string
   ) => {
-    console.log("fetch--");
     const userBalance = await fetchUserBalance(walletAddress, signer);
     setWalletBalance(userBalance);
   };
@@ -103,9 +103,11 @@ export default function Home() {
   };
 
   const clickMintToken = async () => {
+    // 0xD7F335198Bb8cC3C4a53b817480F59eaf0670821
     setMintAddress("");
     const { status, txHash } = await mintToken(mintAddress, signer);
-    // setStatus(status);
+    setStatus(status);
+    console.log(txHash);
     // setTxhash(txHash);
   };
   return (

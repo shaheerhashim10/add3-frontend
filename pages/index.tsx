@@ -1,7 +1,6 @@
 import {
   connectWallet,
   getCurrentWalletConnected,
-  checkMetamaskNetwork,
 } from "@/lib/util/walletConnection";
 import {
   fetchUserBalance,
@@ -22,7 +21,6 @@ declare global {
 export default function Home() {
   const [walletAddress, setWalletAddress] = useState("");
   const [mintAddress, setMintAddress] = useState("");
-  // const [status, setStatus] = useState<any>();
   const [status, setStatus] = useState<{
     text: string;
     color?: "success" | "info" | "error";
@@ -50,6 +48,7 @@ export default function Home() {
      * This function connects to the blockchain and sets up various listeners and event handlers.
      */
     async function mainFunction() {
+      addChainChangedListener(providerSigner);
       addWalletListener(providerSigner);
       const { address, status } = await getCurrentWalletConnected();
       blockchainEventListener(provider, providerSigner, address);
@@ -58,12 +57,7 @@ export default function Home() {
         fetchBalanceFromBlockchain(providerSigner, address);
       setWalletAddress(address);
     }
-    const isGoerliNetwork: boolean = checkMetamaskNetwork();
-    {
-      isGoerliNetwork
-        ? mainFunction()
-        : setStatus({ text: "Please switch to the Goerli test network" });
-    }
+    mainFunction();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -91,6 +85,25 @@ export default function Home() {
       alert(
         "You must install MetaMask, a virtual Ethereum wallet, in your browser."
       );
+    }
+  }
+
+  function addChainChangedListener(signer: ethers.providers.JsonRpcSigner) {
+    if (window.ethereum) {
+      window.ethereum.on("chainChanged", async (chainId: any) => {
+        if (chainId !== "0x5") {
+          setStatus({
+            text: "Connected to a different network. Please switch to Goerli.",
+            color: "error",
+          });
+        } else if (chainId === "0x5") {
+          setStatus({
+            text: "Network changed to Goerli test network",
+            color: "success",
+          });
+          window.location.reload();
+        }
+      });
     }
   }
 

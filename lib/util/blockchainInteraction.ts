@@ -1,29 +1,39 @@
 import { ethers } from "ethers";
 import CONTRACT_ABI from "../../src/abi/TestToken.json";
 
-const CONTRACT_ADDRESS = "0x927DFb9e957526e4D40448d6D05A39ea39a2ee6B";
-
 /**
  * This function creates and returns a new instance of an ethers.js contract object.
  * @param provider
  * @returns ethers.Contract() instance
  */
-export const getContract = (provider: ethers.providers.Provider) => {
-  return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+export const getContract = (
+  provider:
+    | ethers.providers.Provider
+    | ethers.providers.Web3Provider
+    | ethers.providers.JsonRpcSigner
+) => {
+  if (!process.env.CONTRACT_ADDRESS) {
+    throw new Error(
+      "CONTRACT_ADDRESS is not defined in the environment variables"
+    );
+  }
+  return new ethers.Contract(
+    process.env.CONTRACT_ADDRESS as string,
+    CONTRACT_ABI,
+    provider
+  );
 };
 
 /**
- * This function takes in a signer of type ethers.Signer and returns an object containing the name and symbol of the contract
+ * This function takes in a signer of type ethers.providers.JsonRpcSigner and returns an object containing the name and symbol of the contract
  * @param signer
  * @returns
  */
-export const getContractInfo = async (signer: ethers.Signer) => {
+export const getContractInfo = async (
+  signer: ethers.providers.JsonRpcSigner
+) => {
   try {
-    const contract = new ethers.Contract(
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      signer
-    );
+    const contract = getContract(signer);
     const name = await contract.name();
     const symbol = await contract.symbol();
     return { name: name, symbol: symbol };
@@ -44,7 +54,7 @@ export const fetchUserBalance = async (
   userAddress: string,
   signer: ethers.providers.JsonRpcSigner
 ) => {
-  const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+  const contract = getContract(signer);
   const balance = await contract.balanceOf(userAddress);
   const balanceInDecimal = ethers.BigNumber.from(balance._hex).toNumber();
   return balanceInDecimal;
@@ -60,7 +70,7 @@ export const mintToken = async (
   address: string,
   signer: ethers.providers.JsonRpcSigner
 ) => {
-  const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+  const contract = getContract(signer);
   const amount = 1;
   if (!window.ethereum || address === null) {
     return {
@@ -70,7 +80,6 @@ export const mintToken = async (
   }
   try {
     const txHash = await contract.mint(address, amount);
-    console.log(txHash);
     return {
       status: `ℹ️ Once the transaction is verified by the network, the token will be minted to the entered address.`,
       txHash: txHash,

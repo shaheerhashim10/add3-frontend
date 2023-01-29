@@ -92,10 +92,13 @@ export default function Home() {
     if (window.ethereum) {
       window.ethereum.on("chainChanged", async (chainId: any) => {
         if (chainId !== "0x5") {
-          setStatus({
-            text: "Connected to a different network. Please switch to Goerli.",
-            color: "error",
-          });
+          setTokenName("");
+          setTokenSymbol("");
+          setWalletBalance(0);
+          setTxHash("");
+          throw new Error(
+            "Connected to a different network. Please switch to Goerli test network."
+          );
         } else if (chainId === "0x5") {
           setStatus({
             text: "Network changed to Goerli test network",
@@ -211,6 +214,7 @@ export default function Home() {
       }
     }
   };
+
   return (
     <>
       <Head>

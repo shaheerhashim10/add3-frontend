@@ -19,6 +19,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "lib/util/walletConnection.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "lib/util/walletConnection.js", "ib/util/blockchainInteraction.js"],
   "exclude": ["node_modules"]
 }

@@ -1,13 +1,125 @@
-import { connectWallet } from "@/lib/util/walletConnection";
+import {
+  connectWallet,
+  getCurrentWalletConnected,
+} from "@/lib/util/walletConnection";
+import {
+  fetchUserBalance,
+  getContractInfo,
+  mintToken,
+  getContract
+} from "@/lib/util/blockchainInteraction";
 import Head from "next/head";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ethers } from "ethers";
 
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
 export default function Home() {
-  const [walletAddress, setWallet] = useState("");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [mintAddress, setMintAddress] = useState("");
+  const [status, setStatus] = useState<any>("");
+  const [signer, setSigner] = useState<ethers.providers.JsonRpcSigner>();
+  const [tokenName, setTokenName] = useState<String>("");
+  const [tokenSymbol, setTokenSymbol] = useState<String>("");
+  const [walletBalance, setWalletBalance] = useState<Number>(0);
+
+  //called only once
+  useEffect(() => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const providerSigner = provider.getSigner();
+    setSigner(providerSigner);
+
+    async function mainFunction() {
+      blockchainEventListener(provider);
+      addWalletListener(providerSigner);
+      const { address, status } = await getCurrentWalletConnected();
+      fetchContractInfo(providerSigner);
+      if (providerSigner && address)
+        fetchBalanceFromBlockchain(providerSigner, address);
+      setWalletAddress(address);
+
+      // blockchainEventListener(provider);
+      // const { address, status } = await getCurrentWalletConnected();
+      // setWalletAddress(address);
+      // addWalletListener(providerSigner);
+      /* if (providerSigner && address)
+        loadMessagesFromBlockchain(providerSigner, address); */
+    }
+    mainFunction();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function addWalletListener(signer: ethers.providers.JsonRpcSigner) {
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", (accounts: any | any[]) => {
+        if (accounts.length > 0) {
+          setWalletAddress(accounts[0]);
+          setMintAddress("");
+          setStatus("");
+          if (signer && accounts[0])
+            fetchBalanceFromBlockchain(signer, accounts[0]);
+          // setStatus("Write a message in the text-field above.");
+        } else {
+          setWalletAddress("");
+          setStatus("🦊 Connect to MetaMask using the top right button.");
+        }
+      });
+    } else {
+      <p>
+        {" "}
+        🦊{" "}
+        <a
+          target="_blank"
+          href={`https://metamask.io/download.html`}
+          rel="noreferrer"
+        >
+          You must install MetaMask, a virtual Ethereum wallet, in your browser.
+        </a>
+      </p>;
+    }
+  }
+
+  const blockchainEventListener = async (
+    provider: ethers.providers.Web3Provider
+  ) => {
+    const contract = getContract(provider);
+    contract.on("Transfer", (from, to, value) => {
+      console.log({from, to}, ethers.BigNumber.from(value._hex).toNumber())
+    });
+  };
+
+  const fetchBalanceFromBlockchain = async (
+    signer: ethers.providers.JsonRpcSigner,
+    walletAddress: string
+  ) => {
+    const userBalance = await fetchUserBalance(walletAddress, signer);
+    setWalletBalance(userBalance);
+  };
+
+  const fetchContractInfo = async (signer: ethers.providers.JsonRpcSigner) => {
+    const { name, symbol } = await getContractInfo(signer);
+    setTokenName(name);
+    setTokenSymbol(symbol);
+  };
 
   const connectWalletPressed = async () => {
     const { address, status } = await connectWallet();
-    setWallet(address);
+
+    if (signer && address) fetchBalanceFromBlockchain(signer, address);
+    if (signer) fetchContractInfo(signer);
+    setWalletAddress(address);
+  };
+
+  const clickMintToken = async () => {
+    // 0xD7F335198Bb8cC3C4a53b817480F59eaf0670821
+    setMintAddress("");
+    const { status, txHash } = await mintToken(mintAddress, signer);
+    setStatus(status);
+    console.log(txHash);
+    // setTxhash(txHash);
   };
   return (
     <>
@@ -30,6 +142,60 @@ export default function Home() {
               ) : (
                 <span>Connect Wallet</span>
               )}
+            </button>
+          </div>
+        </div>
+        <div className="mt-4" id="status">
+          {status}
+          {/* {txHash && (
+            <>
+              <br />
+              <a
+                target="_blank"
+                href={`https://goerli.etherscan.io/tx/${txHash}`}
+                rel="noreferrer"
+              >
+                ✅
+                <span className="underline">
+                  {" "}
+                  Click here to view the status of your transaction on
+                  Etherscan!
+                </span>
+              </a>
+            </>
+          )} */}
+        </div>
+        <div className="flex flex-col text-2xl gap-12">
+          <span>Token Name: {tokenName && tokenName}</span>
+          <span>Token Symbol: {tokenSymbol && tokenSymbol}</span>
+          <span>
+            <>User Balance: {walletBalance}</>
+          </span>
+        </div>
+
+        <div className="flex justify-center mt-12">
+          <div className="mb-3 xl:w-96">
+            {/* <label
+              htmlFor="exampleFormControlInput1"
+              className="form-label inline-block mb-2 text-gray-700"
+            >
+              Enter wallet address
+            </label> */}
+            <input
+              type="text"
+              className="form-control block w-full px-3 py-2 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+              id="exampleFormControlInput1"
+              placeholder="Enter wallet address here..."
+              onChange={(e) => setMintAddress(e.target.value)}
+              value={mintAddress}
+            />
+          </div>
+          <div>
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 ml-2 rounded"
+              onClick={clickMintToken}
+            >
+              Mint Token
             </button>
           </div>
         </div>

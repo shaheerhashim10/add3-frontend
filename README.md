@@ -2,6 +2,10 @@
 
 The app is a decentralized application (dapp) that allows users to mint tokens for any Ethereum address from a smart contract deployed on the Goerli test network. The app also displays the user's balance and contract metadata on a dashboard and listens for blockchain transfer events to notify the user about the status of their transactions. The app is built using Next.js, TypeScript, Ethers.js, Metamask, and TailwindCSS and is deployed on Vercel.
 
+## Tech stack used
+
+Next.js, TypeScript, TailwindCSS, Ethers.js, Metamask, and Goerli test network.
+
 ## Getting Started
 
 This app is deployed on Vercel and can be accessed from this [link](https://add3-frontend.vercel.app/). 

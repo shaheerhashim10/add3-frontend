@@ -1,12 +1,13 @@
 import {
   connectWallet,
   getCurrentWalletConnected,
+  checkMetamaskNetwork,
 } from "@/lib/util/walletConnection";
 import {
   fetchUserBalance,
   getContractInfo,
   mintToken,
-  getContract
+  getContract,
 } from "@/lib/util/blockchainInteraction";
 import Head from "next/head";
 import { useEffect, useState } from "react";
@@ -24,14 +25,22 @@ export default function Home() {
   const [signer, setSigner] = useState<ethers.providers.JsonRpcSigner>();
   const [tokenName, setTokenName] = useState<String>("");
   const [tokenSymbol, setTokenSymbol] = useState<String>("");
-  const [walletBalance, setWalletBalance] = useState<Number>(0);
+  const [walletBalance, setWalletBalance] = useState<Number>();
+  const [txHash, setTxHash] = useState<String>("");
 
   //called only once
   useEffect(() => {
+    if (!window.ethereum)
+      throw new Error(
+        "You must install MetaMask, a virtual Ethereum wallet, in your browser."
+      );
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const providerSigner = provider.getSigner();
     setSigner(providerSigner);
 
+    /**
+     * This function connects to the blockchain and sets up various listeners and event handlers.
+     */
     async function mainFunction() {
       blockchainEventListener(provider);
       addWalletListener(providerSigner);
@@ -40,18 +49,20 @@ export default function Home() {
       if (providerSigner && address)
         fetchBalanceFromBlockchain(providerSigner, address);
       setWalletAddress(address);
-
-      // blockchainEventListener(provider);
-      // const { address, status } = await getCurrentWalletConnected();
-      // setWalletAddress(address);
-      // addWalletListener(providerSigner);
-      /* if (providerSigner && address)
-        loadMessagesFromBlockchain(providerSigner, address); */
     }
-    mainFunction();
+    const isGoerliNetwork: boolean = checkMetamaskNetwork();
+    {
+      isGoerliNetwork
+        ? mainFunction()
+        : setStatus("Please switch to the Goerli test network");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * The addWalletListener function is used to listen for changes to the user's Ethereum wallet address in the Metamask browser extension.
+   * @param signer - Instance of ethers.providers.JsonRpcSigner used to sign transactions on the Ethereum blockchain.
+   */
   function addWalletListener(signer: ethers.providers.JsonRpcSigner) {
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", (accounts: any | any[]) => {
@@ -61,65 +72,101 @@ export default function Home() {
           setStatus("");
           if (signer && accounts[0])
             fetchBalanceFromBlockchain(signer, accounts[0]);
-          // setStatus("Write a message in the text-field above.");
         } else {
           setWalletAddress("");
           setStatus("🦊 Connect to MetaMask using the top right button.");
         }
       });
     } else {
-      <p>
-        {" "}
-        🦊{" "}
-        <a
-          target="_blank"
-          href={`https://metamask.io/download.html`}
-          rel="noreferrer"
-        >
-          You must install MetaMask, a virtual Ethereum wallet, in your browser.
-        </a>
-      </p>;
+      alert(
+        "You must install MetaMask, a virtual Ethereum wallet, in your browser."
+      );
     }
   }
 
+  /**
+   * blockchainEventListener is an async function that listens to events emitted from a smart contract on the blockchain.
+   * @param provider - The provider object that is used to connect to the blockchain.
+   */
   const blockchainEventListener = async (
     provider: ethers.providers.Web3Provider
   ) => {
-    const contract = getContract(provider);
-    contract.on("Transfer", (from, to, value) => {
-      console.log({from, to}, ethers.BigNumber.from(value._hex).toNumber())
-    });
+    try {
+      const contract = getContract(provider);
+      contract.on("Transfer", (from, to, value) => {
+        setStatus(`Token minted to address: ${to}`);
+      });
+    } catch (error) {
+      setStatus("An error occurred while listening to blockchain events.");
+    }
   };
 
+  /**
+   * Fetches the balance of a given wallet address from the blockchain
+   * @param signer - The signer object used to interact with the blockchain
+   * @param walletAddress - The wallet address to fetch the balance for
+   */
   const fetchBalanceFromBlockchain = async (
     signer: ethers.providers.JsonRpcSigner,
     walletAddress: string
   ) => {
-    const userBalance = await fetchUserBalance(walletAddress, signer);
-    setWalletBalance(userBalance);
+    try {
+      const userBalance = await fetchUserBalance(walletAddress, signer);
+      setWalletBalance(userBalance);
+    } catch (error) {
+      setStatus("Error fetching balance from blockchain");
+    }
   };
 
+  /**
+   * This function is used to fetch the name and symbol of the token contract that is being used.
+   * @param signer
+   */
   const fetchContractInfo = async (signer: ethers.providers.JsonRpcSigner) => {
-    const { name, symbol } = await getContractInfo(signer);
-    setTokenName(name);
-    setTokenSymbol(symbol);
+    try {
+      const { name, symbol } = await getContractInfo(signer);
+      setTokenName(name);
+      setTokenSymbol(symbol);
+    } catch (error) {
+      console.error(error);
+      setStatus(`Error fetching contract info: ${error.message}`);
+    }
   };
 
+  /**
+   * This function is used to connect to the user's wallet and retrieve the address of the wallet.
+   */
   const connectWalletPressed = async () => {
-    const { address, status } = await connectWallet();
-
-    if (signer && address) fetchBalanceFromBlockchain(signer, address);
-    if (signer) fetchContractInfo(signer);
-    setWalletAddress(address);
+    try {
+      const { address } = await connectWallet();
+      if (signer && address) fetchBalanceFromBlockchain(signer, address);
+      if (signer) fetchContractInfo(signer);
+      setWalletAddress(address);
+    } catch (error) {
+      console.error(error);
+      setStatus("Error connecting to wallet, please try again");
+    }
   };
 
+  /**
+   * This function is used to mint new tokens to a specified address.
+   */
   const clickMintToken = async () => {
     // 0xD7F335198Bb8cC3C4a53b817480F59eaf0670821
     setMintAddress("");
-    const { status, txHash } = await mintToken(mintAddress, signer);
-    setStatus(status);
-    console.log(txHash);
-    // setTxhash(txHash);
+    if (signer) {
+      try {
+        const { status, txHash } = await mintToken(mintAddress, signer);
+        setStatus(status);
+        setTxHash(txHash.hash);
+        console.log(txHash);
+      } catch (error) {
+        setStatus(
+          "An error occurred while trying to mint tokens: " + error.message
+        );
+        console.error(error);
+      }
+    }
   };
   return (
     <>
@@ -145,25 +192,20 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <div className="mt-4" id="status">
+        <div className="my-4" id="status">
           {status}
-          {/* {txHash && (
+          {txHash && (
             <>
-              <br />
+              <br />✅ To view transcation status on Etherscan,{" "}
               <a
                 target="_blank"
                 href={`https://goerli.etherscan.io/tx/${txHash}`}
                 rel="noreferrer"
               >
-                ✅
-                <span className="underline">
-                  {" "}
-                  Click here to view the status of your transaction on
-                  Etherscan!
-                </span>
+                <span className="underline"> click here</span>
               </a>
             </>
-          )} */}
+          )}
         </div>
         <div className="flex flex-col text-2xl gap-12">
           <span>Token Name: {tokenName && tokenName}</span>

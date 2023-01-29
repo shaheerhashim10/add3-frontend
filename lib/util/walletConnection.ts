@@ -68,17 +68,3 @@ export const getCurrentWalletConnected = async (): Promise<WalletConnect> => {
     } as WalletConnect;
   }
 };
-
-/**
- * This function checks if the current network of Metamask is Goerli test network
- * @returns {boolean}
- */
-/* export const checkMetamaskNetwork = () => {
-  const goerliNetworkID = "5"; // network id of Goerli network
-  const currentNetwork = window.ethereum.networkVersion;
-  if (currentNetwork !== goerliNetworkID) {
-    return false;
-  } else {
-    return true;
-  }
-}; */

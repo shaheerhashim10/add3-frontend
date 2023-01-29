@@ -88,6 +88,10 @@ export default function Home() {
     }
   }
 
+  /**
+   * This function listens to the chain change event on Metamask and throws an error if the network is other than Goerli
+   * @param signer
+   */
   function addChainChangedListener(signer: ethers.providers.JsonRpcSigner) {
     if (window.ethereum) {
       window.ethereum.on("chainChanged", async (chainId: any) => {
@@ -203,7 +207,9 @@ export default function Home() {
    */
   const clickMintToken = async () => {
     setMintAddress("");
-    if (signer) {
+    const addressValid = isAddressValid(mintAddress);
+
+    if (signer && addressValid) {
       try {
         const { status, txHash } = await mintToken(mintAddress, signer);
         setStatus({ text: status });
@@ -216,6 +222,21 @@ export default function Home() {
         });
         console.error(error);
       }
+    }
+  };
+
+  /**
+   * This function checks the validity of the user entered wallet address
+   * @param address
+   * @returns Boolean
+   */
+  const isAddressValid = (address: string) => {
+    if (ethers.utils.isAddress(address)) {
+      if (status.color === "error") setStatus({ text: "" });
+      return true;
+    } else {
+      setStatus({ text: "Please a enter a wallet address", color: "error" });
+      return false;
     }
   };
 

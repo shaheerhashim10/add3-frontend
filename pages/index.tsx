@@ -50,9 +50,9 @@ export default function Home() {
      * This function connects to the blockchain and sets up various listeners and event handlers.
      */
     async function mainFunction() {
-      blockchainEventListener(provider);
       addWalletListener(providerSigner);
       const { address, status } = await getCurrentWalletConnected();
+      blockchainEventListener(provider, providerSigner, address);
       fetchContractInfo(providerSigner);
       if (providerSigner && address)
         fetchBalanceFromBlockchain(providerSigner, address);
@@ -99,7 +99,9 @@ export default function Home() {
    * @param provider - The provider object that is used to connect to the blockchain.
    */
   const blockchainEventListener = async (
-    provider: ethers.providers.Web3Provider
+    provider: ethers.providers.Web3Provider,
+    signer: ethers.providers.JsonRpcSigner,
+    currentWalletAddress: string
   ) => {
     try {
       const contract = getContract(provider);
@@ -108,6 +110,9 @@ export default function Home() {
           text: `Token minted to address: ${to}.`,
           color: "success",
         });
+        if (to.toLowerCase() === currentWalletAddress.toLowerCase()) {
+          fetchBalanceFromBlockchain(signer, to);
+        }
       });
     } catch (error) {
       setStatus({
@@ -221,11 +226,22 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-col text-2xl gap-12">
-          <span>Token Name: {tokenName && tokenName}</span>
-          <span>Token Symbol: {tokenSymbol && tokenSymbol}</span>
-          <span>
-            <>User Balance: {walletBalance}</>
-          </span>
+          <div>
+            <span className="font-semibold font-mono">Token Name: </span>
+            <span>{tokenName && tokenName}</span>
+          </div>
+          <div>
+            <span className="font-semibold font-mono">Token Symbol: </span>
+            <span>{tokenSymbol && tokenSymbol}</span>
+          </div>
+          <div>
+            <span className="font-semibold font-mono">
+              <>User Balance: </>
+            </span>
+            <span>
+              <>{walletBalance}</>
+            </span>
+          </div>
         </div>
 
         <div className="flex justify-center mt-12">

@@ -81,7 +81,7 @@ export const mintToken = async (
   try {
     const txHash = await contract.mint(address, amount);
     return {
-      status: `ℹ️ Once the transaction is verified by the network, the token will be minted to the entered address.`,
+      status: `Token minting in progress!`,
       txHash: txHash,
     };
   } catch (error) {

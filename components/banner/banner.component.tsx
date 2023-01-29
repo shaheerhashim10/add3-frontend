@@ -3,20 +3,18 @@ import { IBanner } from "./banner.types";
 
 const Banner: React.FC<IBanner> = ({ text, txHash, color = "info" }) => {
   const [isVisible, setIsVisible] = useState(true);
-  const bannerBGColor = `bg-${color}`.toString();
   useEffect(() => {
     setIsVisible(true);
   }, [text]);
   return (
     <div
-      className={`${bannerBGColor} sticky ${isVisible ? "block" : "hidden"}`}
+    className={`${color === "success" ? 'bg-success' : color === "error" ? 'bg-error' : 'bg-info'} sticky ${isVisible ? "block" : "hidden"}`}
     >
       <div className="mx-auto max-w-7xl py-3 px-3 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-center">
-          <div className="flex w-0 flex-1 items-center justify-center">
-            <p className="ml-3 truncate font-medium text-white">
-              <span className="md:hidden">We announce new products!</span>
-              <span className="hidden md:inline">
+          <div className="flex w-0 flex-1 items-center justify-center pr-4">
+            <p className="ml-3 font-medium text-white">
+              <span>
                 {text}
                 {txHash && (
                   <>

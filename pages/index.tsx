@@ -12,6 +12,7 @@ import {
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
+import Banner from "@/components/banner/banner.component";
 
 declare global {
   interface Window {
@@ -21,7 +22,14 @@ declare global {
 export default function Home() {
   const [walletAddress, setWalletAddress] = useState("");
   const [mintAddress, setMintAddress] = useState("");
-  const [status, setStatus] = useState<any>("");
+  // const [status, setStatus] = useState<any>();
+  const [status, setStatus] = useState<{
+    text: string;
+    color?: "success" | "info" | "error";
+  }>({
+    text: "",
+    color: "info",
+  });
   const [signer, setSigner] = useState<ethers.providers.JsonRpcSigner>();
   const [tokenName, setTokenName] = useState<String>("");
   const [tokenSymbol, setTokenSymbol] = useState<String>("");
@@ -42,9 +50,9 @@ export default function Home() {
      * This function connects to the blockchain and sets up various listeners and event handlers.
      */
     async function mainFunction() {
-      blockchainEventListener(provider);
       addWalletListener(providerSigner);
       const { address, status } = await getCurrentWalletConnected();
+      blockchainEventListener(provider, providerSigner, address);
       fetchContractInfo(providerSigner);
       if (providerSigner && address)
         fetchBalanceFromBlockchain(providerSigner, address);
@@ -54,7 +62,7 @@ export default function Home() {
     {
       isGoerliNetwork
         ? mainFunction()
-        : setStatus("Please switch to the Goerli test network");
+        : setStatus({ text: "Please switch to the Goerli test network" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -69,12 +77,14 @@ export default function Home() {
         if (accounts.length > 0) {
           setWalletAddress(accounts[0]);
           setMintAddress("");
-          setStatus("");
+          setStatus({ text: "" });
           if (signer && accounts[0])
             fetchBalanceFromBlockchain(signer, accounts[0]);
         } else {
           setWalletAddress("");
-          setStatus("🦊 Connect to MetaMask using the top right button.");
+          setStatus({
+            text: "🦊 Connect to MetaMask using the top right button.",
+          });
         }
       });
     } else {
@@ -89,15 +99,26 @@ export default function Home() {
    * @param provider - The provider object that is used to connect to the blockchain.
    */
   const blockchainEventListener = async (
-    provider: ethers.providers.Web3Provider
+    provider: ethers.providers.Web3Provider,
+    signer: ethers.providers.JsonRpcSigner,
+    currentWalletAddress: string
   ) => {
     try {
       const contract = getContract(provider);
       contract.on("Transfer", (from, to, value) => {
-        setStatus(`Token minted to address: ${to}`);
+        setStatus({
+          text: `Token minted to address: ${to}.`,
+          color: "success",
+        });
+        if (to.toLowerCase() === currentWalletAddress.toLowerCase()) {
+          fetchBalanceFromBlockchain(signer, to);
+        }
       });
     } catch (error) {
-      setStatus("An error occurred while listening to blockchain events.");
+      setStatus({
+        text: "An error occurred while listening to blockchain events.",
+        color: "error",
+      });
     }
   };
 
@@ -114,7 +135,10 @@ export default function Home() {
       const userBalance = await fetchUserBalance(walletAddress, signer);
       setWalletBalance(userBalance);
     } catch (error) {
-      setStatus("Error fetching balance from blockchain");
+      setStatus({
+        text: "Error fetching balance from blockchain",
+        color: "error",
+      });
     }
   };
 
@@ -129,7 +153,10 @@ export default function Home() {
       setTokenSymbol(symbol);
     } catch (error) {
       console.error(error);
-      setStatus(`Error fetching contract info: ${error.message}`);
+      setStatus({
+        text: `Error fetching contract info: ${error.message}`,
+        color: "error",
+      });
     }
   };
 
@@ -144,7 +171,10 @@ export default function Home() {
       setWalletAddress(address);
     } catch (error) {
       console.error(error);
-      setStatus("Error connecting to wallet, please try again");
+      setStatus({
+        text: "Error connecting to wallet, please try again",
+        color: "error",
+      });
     }
   };
 
@@ -152,18 +182,18 @@ export default function Home() {
    * This function is used to mint new tokens to a specified address.
    */
   const clickMintToken = async () => {
-    // 0xD7F335198Bb8cC3C4a53b817480F59eaf0670821
     setMintAddress("");
     if (signer) {
       try {
         const { status, txHash } = await mintToken(mintAddress, signer);
-        setStatus(status);
+        setStatus({ text: status });
         setTxHash(txHash.hash);
-        console.log(txHash);
       } catch (error) {
-        setStatus(
-          "An error occurred while trying to mint tokens: " + error.message
-        );
+        setStatus({
+          text:
+            "An error occurred while trying to mint tokens: " + error.message,
+          color: "error",
+        });
         console.error(error);
       }
     }
@@ -174,6 +204,9 @@ export default function Home() {
         <title>Add3 Frontend</title>
       </Head>
       <div className="md:mx-72 mx-auto mt-8 px-4  sm:px-6 lg:max-w-7xl lg:px-8">
+        {status.text && (
+          <Banner text={status.text} color={status.color} txHash={txHash} />
+        )}
         <div className="flex justify-end p-8">
           <div>
             <button
@@ -192,37 +225,27 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <div className="my-4" id="status">
-          {status}
-          {txHash && (
-            <>
-              <br />✅ To view transcation status on Etherscan,{" "}
-              <a
-                target="_blank"
-                href={`https://goerli.etherscan.io/tx/${txHash}`}
-                rel="noreferrer"
-              >
-                <span className="underline"> click here</span>
-              </a>
-            </>
-          )}
-        </div>
         <div className="flex flex-col text-2xl gap-12">
-          <span>Token Name: {tokenName && tokenName}</span>
-          <span>Token Symbol: {tokenSymbol && tokenSymbol}</span>
-          <span>
-            <>User Balance: {walletBalance}</>
-          </span>
+          <div>
+            <span className="font-semibold font-mono">Token Name: </span>
+            <span>{tokenName && tokenName}</span>
+          </div>
+          <div>
+            <span className="font-semibold font-mono">Token Symbol: </span>
+            <span>{tokenSymbol && tokenSymbol}</span>
+          </div>
+          <div>
+            <span className="font-semibold font-mono">
+              <>User Balance: </>
+            </span>
+            <span>
+              <>{walletBalance}</>
+            </span>
+          </div>
         </div>
 
         <div className="flex justify-center mt-12">
           <div className="mb-3 xl:w-96">
-            {/* <label
-              htmlFor="exampleFormControlInput1"
-              className="form-label inline-block mb-2 text-gray-700"
-            >
-              Enter wallet address
-            </label> */}
             <input
               type="text"
               className="form-control block w-full px-3 py-2 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"

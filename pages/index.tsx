@@ -6,6 +6,7 @@ import {
   fetchUserBalance,
   getContractInfo,
   mintToken,
+  getContract
 } from "@/lib/util/blockchainInteraction";
 import Head from "next/head";
 import { useEffect, useState } from "react";
@@ -32,6 +33,7 @@ export default function Home() {
     setSigner(providerSigner);
 
     async function mainFunction() {
+      blockchainEventListener(provider);
       addWalletListener(providerSigner);
       const { address, status } = await getCurrentWalletConnected();
       fetchContractInfo(providerSigner);
@@ -79,6 +81,15 @@ export default function Home() {
       </p>;
     }
   }
+
+  const blockchainEventListener = async (
+    provider: ethers.providers.Web3Provider
+  ) => {
+    const contract = getContract(provider);
+    contract.on("Transfer", (from, to, value) => {
+      console.log({from, to}, ethers.BigNumber.from(value._hex).toNumber())
+    });
+  };
 
   const fetchBalanceFromBlockchain = async (
     signer: ethers.providers.JsonRpcSigner,

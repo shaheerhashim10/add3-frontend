@@ -34,6 +34,9 @@ export default function Home() {
     const providerSigner = provider.getSigner();
     setSigner(providerSigner);
 
+    /**
+     * This function connects to the blockchain and sets up various listeners and event handlers.
+     */
     async function mainFunction() {
       blockchainEventListener(provider);
       addWalletListener(providerSigner);
@@ -45,11 +48,17 @@ export default function Home() {
     }
     const isGoerliNetwork: boolean = checkMetamaskNetwork();
     {
-      isGoerliNetwork && mainFunction();
+      isGoerliNetwork
+        ? mainFunction()
+        : setStatus("Please switch to the Goerli test network");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * The addWalletListener function is used to listen for changes to the user's Ethereum wallet address in the Metamask browser extension.
+   * @param signer - Instance of ethers.providers.JsonRpcSigner used to sign transactions on the Ethereum blockchain.
+   */
   function addWalletListener(signer: ethers.providers.JsonRpcSigner) {
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", (accounts: any | any[]) => {
@@ -62,7 +71,6 @@ export default function Home() {
           console.log(accounts[0]);
           if (signer && accounts[0])
             fetchBalanceFromBlockchain(signer, accounts[0]);
-          // setStatus("Write a message in the text-field above.");
         } else {
           setWalletAddress("");
           setStatus("🦊 Connect to MetaMask using the top right button.");
@@ -83,6 +91,10 @@ export default function Home() {
     }
   }
 
+  /**
+   * blockchainEventListener is an async function that listens to events emitted from a smart contract on the blockchain.
+   * @param provider - The provider object that is used to connect to the blockchain.
+   */
   const blockchainEventListener = async (
     provider: ethers.providers.Web3Provider
   ) => {
@@ -93,6 +105,11 @@ export default function Home() {
     });
   };
 
+  /**
+   * Fetches the balance of a given wallet address from the blockchain
+   * @param signer - The signer object used to interact with the blockchain
+   * @param walletAddress - The wallet address to fetch the balance for
+   */
   const fetchBalanceFromBlockchain = async (
     signer: ethers.providers.JsonRpcSigner,
     walletAddress: string
@@ -103,12 +120,19 @@ export default function Home() {
     setWalletBalance(userBalance);
   };
 
+  /**
+   * This function is used to fetch the name and symbol of the token contract that is being used.
+   * @param signer
+   */
   const fetchContractInfo = async (signer: ethers.providers.JsonRpcSigner) => {
     const { name, symbol } = await getContractInfo(signer);
     setTokenName(name);
     setTokenSymbol(symbol);
   };
 
+  /**
+   * This function is used to connect to the user's wallet and retrieve the address of the wallet.
+   */
   const connectWalletPressed = async () => {
     const { address, status } = await connectWallet();
     if (signer && address) fetchBalanceFromBlockchain(signer, address);
@@ -116,6 +140,9 @@ export default function Home() {
     setWalletAddress(address);
   };
 
+  /**
+   * This function is used to mint new tokens to a specified address.
+   */
   const clickMintToken = async () => {
     // 0xD7F335198Bb8cC3C4a53b817480F59eaf0670821
     setMintAddress("");

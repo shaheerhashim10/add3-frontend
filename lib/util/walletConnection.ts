@@ -3,6 +3,10 @@ interface WalletConnect {
   status: string;
 }
 
+/**
+ * This async function returns a promise of an object of type WalletConnect
+ * @returns {WalletConnect}
+ */
 export const connectWallet = async (): Promise<WalletConnect> => {
   if (window.ethereum) {
     try {
@@ -29,6 +33,10 @@ export const connectWallet = async (): Promise<WalletConnect> => {
   }
 };
 
+/**
+ * This async function returns a promise of an object of type WalletConnect
+ * @returns {WalletConnect}
+ */
 export const getCurrentWalletConnected = async (): Promise<WalletConnect> => {
   if (window.ethereum) {
     try {
@@ -61,11 +69,14 @@ export const getCurrentWalletConnected = async (): Promise<WalletConnect> => {
   }
 };
 
+/**
+ * This function checks if the current network of Metamask is Goerli test network
+ * @returns {boolean}
+ */
 export const checkMetamaskNetwork = () => {
-  const desiredNetwork = "5"; // network id of Goerli network
+  const goerliNetworkID = "5"; // network id of Goerli network
   const currentNetwork = window.ethereum.networkVersion;
-  if (currentNetwork !== desiredNetwork) {
-    alert(`Please switch to the Goerli Test Network`);
+  if (currentNetwork !== goerliNetworkID) {
     return false;
   } else {
     return true;

@@ -3,10 +3,20 @@ import CONTRACT_ABI from "../../src/abi/TestToken.json";
 
 const CONTRACT_ADDRESS = "0x927DFb9e957526e4D40448d6D05A39ea39a2ee6B";
 
+/**
+ * This function creates and returns a new instance of an ethers.js contract object.
+ * @param provider
+ * @returns ethers.Contract() instance
+ */
 export const getContract = (provider: ethers.providers.Provider) => {
   return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 };
 
+/**
+ * This function takes in a signer of type ethers.Signer and returns an object containing the name and symbol of the contract
+ * @param signer
+ * @returns
+ */
 export const getContractInfo = async (signer: ethers.Signer) => {
   try {
     const contract = new ethers.Contract(
@@ -24,6 +34,12 @@ export const getContractInfo = async (signer: ethers.Signer) => {
   }
 };
 
+/**
+ * This function takes in a user's address and a signer of type ethers.providers.JsonRpcSigner and returns the user's token balance in decimal
+ * @param userAddress
+ * @param signer
+ * @returns
+ */
 export const fetchUserBalance = async (
   userAddress: string,
   signer: ethers.providers.JsonRpcSigner
@@ -34,6 +50,12 @@ export const fetchUserBalance = async (
   return balanceInDecimal;
 };
 
+/**
+ * This function takes in an address and a signer of type ethers.providers.JsonRpcSigner and returns an object containing the status of the minting process.
+ * @param address
+ * @param signer
+ * @returns
+ */
 export const mintToken = async (
   address: string,
   signer: ethers.providers.JsonRpcSigner

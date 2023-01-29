@@ -96,6 +96,10 @@ export default function Home() {
           setTokenSymbol("");
           setWalletBalance(0);
           setTxHash("");
+          setStatus({
+            text: "Connected to a different network. Please switch to Goerli test network.",
+            color: "error",
+          });
           throw new Error(
             "Connected to a different network. Please switch to Goerli test network."
           );

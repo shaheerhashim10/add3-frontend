@@ -60,3 +60,14 @@ export const getCurrentWalletConnected = async (): Promise<WalletConnect> => {
     } as WalletConnect;
   }
 };
+
+export const checkMetamaskNetwork = () => {
+  const desiredNetwork = "5"; // network id of Goerli network
+  const currentNetwork = window.ethereum.networkVersion;
+  if (currentNetwork !== desiredNetwork) {
+    alert(`Please switch to the Goerli Test Network`);
+    return false;
+  } else {
+    return true;
+  }
+};

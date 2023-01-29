@@ -1,6 +1,7 @@
 import {
   connectWallet,
   getCurrentWalletConnected,
+  checkMetamaskNetwork,
 } from "@/lib/util/walletConnection";
 import {
   fetchUserBalance,
@@ -42,18 +43,14 @@ export default function Home() {
         fetchBalanceFromBlockchain(providerSigner, address);
       setWalletAddress(address);
     }
-    mainFunction();
+    const isGoerliNetwork: boolean = checkMetamaskNetwork();
+    {
+      isGoerliNetwork && mainFunction();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function addWalletListener(signer: ethers.providers.JsonRpcSigner) {
-    /* const desiredNetwork = "5"; // or any other network id
-      const currentNetwork = window.ethereum.networkVersion;
-      if (currentNetwork !== desiredNetwork) {
-        alert(`Please switch to the desired network ${desiredNetwork}`);
-      } else {
-        alert("good");
-      } */
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", (accounts: any | any[]) => {
         if (accounts.length > 0) {

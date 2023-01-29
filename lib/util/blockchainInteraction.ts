@@ -1,13 +1,13 @@
-const { ethers } = require("ethers");
-const CONTRACT_ABI = require("../../src/abi/TestToken.json");
+import { ethers } from "ethers";
+import CONTRACT_ABI from "../../src/abi/TestToken.json";
+
 const CONTRACT_ADDRESS = "0x927DFb9e957526e4D40448d6D05A39ea39a2ee6B";
 
-// const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-export const getContract = (provider) => {
+export const getContract = (provider: ethers.providers.Provider) => {
   return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 };
 
-export const getContractInfo = async (signer) => {
+export const getContractInfo = async (signer: ethers.Signer) => {
   try {
     const contract = new ethers.Contract(
       CONTRACT_ADDRESS,
@@ -24,14 +24,20 @@ export const getContractInfo = async (signer) => {
   }
 };
 
-export const fetchUserBalance = async (userAddress, signer) => {
+export const fetchUserBalance = async (
+  userAddress: string,
+  signer: ethers.providers.JsonRpcSigner
+) => {
   const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
   const balance = await contract.balanceOf(userAddress);
   const balanceInDecimal = ethers.BigNumber.from(balance._hex).toNumber();
   return balanceInDecimal;
 };
 
-export const mintToken = async (address, signer) => {
+export const mintToken = async (
+  address: string,
+  signer: ethers.providers.JsonRpcSigner
+) => {
   const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
   const amount = 1;
   if (!window.ethereum || address === null) {

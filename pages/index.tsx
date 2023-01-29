@@ -6,7 +6,7 @@ import {
   fetchUserBalance,
   getContractInfo,
   mintToken,
-  getContract
+  getContract,
 } from "@/lib/util/blockchainInteraction";
 import Head from "next/head";
 import { useEffect, useState } from "react";
@@ -25,6 +25,7 @@ export default function Home() {
   const [tokenName, setTokenName] = useState<String>("");
   const [tokenSymbol, setTokenSymbol] = useState<String>("");
   const [walletBalance, setWalletBalance] = useState<Number>(0);
+  const [txHash, setTxHash] = useState<String>("");
 
   //called only once
   useEffect(() => {
@@ -40,25 +41,28 @@ export default function Home() {
       if (providerSigner && address)
         fetchBalanceFromBlockchain(providerSigner, address);
       setWalletAddress(address);
-
-      // blockchainEventListener(provider);
-      // const { address, status } = await getCurrentWalletConnected();
-      // setWalletAddress(address);
-      // addWalletListener(providerSigner);
-      /* if (providerSigner && address)
-        loadMessagesFromBlockchain(providerSigner, address); */
     }
     mainFunction();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function addWalletListener(signer: ethers.providers.JsonRpcSigner) {
+    /* const desiredNetwork = "5"; // or any other network id
+      const currentNetwork = window.ethereum.networkVersion;
+      if (currentNetwork !== desiredNetwork) {
+        alert(`Please switch to the desired network ${desiredNetwork}`);
+      } else {
+        alert("good");
+      } */
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", (accounts: any | any[]) => {
         if (accounts.length > 0) {
           setWalletAddress(accounts[0]);
           setMintAddress("");
           setStatus("");
+          console.log("inside addWalletListener");
+          console.log(signer);
+          console.log(accounts[0]);
           if (signer && accounts[0])
             fetchBalanceFromBlockchain(signer, accounts[0]);
           // setStatus("Write a message in the text-field above.");
@@ -87,7 +91,8 @@ export default function Home() {
   ) => {
     const contract = getContract(provider);
     contract.on("Transfer", (from, to, value) => {
-      console.log({from, to}, ethers.BigNumber.from(value._hex).toNumber())
+      console.log({ from, to }, ethers.BigNumber.from(value._hex).toNumber());
+      setStatus(`Token minted to address: ${to}`);
     });
   };
 
@@ -95,6 +100,8 @@ export default function Home() {
     signer: ethers.providers.JsonRpcSigner,
     walletAddress: string
   ) => {
+    console.log("inside fetchBalanceFromBlockchain");
+    console.log({ signer, walletAddress });
     const userBalance = await fetchUserBalance(walletAddress, signer);
     setWalletBalance(userBalance);
   };
@@ -107,7 +114,6 @@ export default function Home() {
 
   const connectWalletPressed = async () => {
     const { address, status } = await connectWallet();
-
     if (signer && address) fetchBalanceFromBlockchain(signer, address);
     if (signer) fetchContractInfo(signer);
     setWalletAddress(address);
@@ -116,10 +122,19 @@ export default function Home() {
   const clickMintToken = async () => {
     // 0xD7F335198Bb8cC3C4a53b817480F59eaf0670821
     setMintAddress("");
-    const { status, txHash } = await mintToken(mintAddress, signer);
-    setStatus(status);
-    console.log(txHash);
-    // setTxhash(txHash);
+    if (signer) {
+      try {
+        const { status, txHash } = await mintToken(mintAddress, signer);
+        setStatus(status);
+        setTxHash(txHash.hash);
+        console.log(txHash);
+      } catch (error) {
+        setStatus(
+          "An error occurred while trying to mint tokens: " + error.message
+        );
+        console.error(error);
+      }
+    }
   };
   return (
     <>
@@ -145,9 +160,9 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <div className="mt-4" id="status">
+        <div className="my-4" id="status">
           {status}
-          {/* {txHash && (
+          {txHash && (
             <>
               <br />
               <a
@@ -163,7 +178,7 @@ export default function Home() {
                 </span>
               </a>
             </>
-          )} */}
+          )}
         </div>
         <div className="flex flex-col text-2xl gap-12">
           <span>Token Name: {tokenName && tokenName}</span>
